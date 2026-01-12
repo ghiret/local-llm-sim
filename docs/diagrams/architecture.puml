@@ -1,0 +1,56 @@
+@startuml architecture
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title local-llm-sim Architecture
+
+package "Client Tools" {
+    [Open WebUI] as webui
+    [aider] as aider
+    [opencode] as opencode
+    [Custom Agents] as agents
+}
+
+package "local-llm-sim" {
+    package "API Layer" {
+        [Ollama API\n/api/*] as ollama_api
+        [Metrics API\n/api/stats, /metrics] as metrics_api
+    }
+    
+    package "Core" {
+        [Model Registry] as registry
+        [Latency Simulator] as latency
+        [Format Converter] as converter
+        [OpenRouter Proxy] as proxy
+    }
+    
+    database "config/models.yaml" as config
+}
+
+cloud "OpenRouter API" as openrouter
+
+webui --> ollama_api : Ollama Protocol
+aider --> ollama_api
+opencode --> ollama_api
+agents --> ollama_api
+
+ollama_api --> registry : Model lookup
+ollama_api --> converter : Message format
+ollama_api --> latency : Delay simulation
+ollama_api --> proxy : API calls
+ollama_api --> metrics_api : Stats recording
+
+registry --> config : Load models
+
+proxy --> openrouter : HTTPS
+
+note right of latency
+  Simulates M3 Ultra:
+  • Prefill: 350-800 t/s
+  • Decode: 18-65 t/s
+  • Gaussian jitter
+  • Random stutters
+  • Thermal decay
+end note
+
+@enduml

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # The local-llm-sim server (Ollama API emulator)
+  simulator:
+    build: .
+    container_name: local-llm-sim
+    ports:
+      - "11434:11434"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SIMULATE_LATENCY=${SIMULATE_LATENCY:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - HOST=0.0.0.0
+      - PORT=11434
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Open WebUI - ChatGPT-like interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://simulator:11434
+      - WEBUI_AUTH=true
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      simulator:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  open-webui-data:

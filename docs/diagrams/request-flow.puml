@@ -1,0 +1,72 @@
+@startuml request-flow
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Request Flow: Streaming Chat Completion
+
+actor Client
+participant "Ollama API\n/api/chat" as API
+participant "Model\nRegistry" as Registry
+participant "Format\nConverter" as Converter
+participant "Latency\nSimulator" as Latency
+participant "OpenRouter\nProxy" as Proxy
+participant "OpenRouter\nAPI" as OpenRouter
+
+Client -> API : POST /api/chat\n{model, messages, stream:true}
+
+API -> Registry : get_model(name)
+Registry --> API : ModelConfig
+
+API -> Converter : ollama_messages_to_openai()
+Converter --> API : OpenAI messages
+
+API -> API : count_tokens(messages)
+
+API -> Latency : create simulator\n(prefill_tps, decode_tps)
+
+API -> Proxy : chat_completion_stream()
+activate Proxy
+
+Proxy -> OpenRouter : POST /chat/completions
+activate OpenRouter
+
+note over Latency
+  Prefill Delay
+  = tokens / prefill_tps
+  * (1 + gaussian(0, 0.12))
+end note
+
+Latency --> Latency : await prefill_delay
+
+OpenRouter --> Proxy : SSE: data chunk 1
+Proxy --> API : chunk 1
+
+loop For each token
+    OpenRouter --> Proxy : SSE: data chunk N
+    Proxy --> API : chunk N
+
+    note over Latency
+      Decode Delay
+      = 1/decode_tps
+      * jitter * stutter * thermal
+    end note
+
+    Latency --> Latency : await token_delay
+
+    API -> Converter : openai_chunk_to_ollama()
+    Converter --> API : Ollama chunk
+
+    API --> Client : NDJSON chunk
+end
+
+OpenRouter --> Proxy : SSE: [DONE]
+deactivate OpenRouter
+
+Proxy --> API : stream complete
+deactivate Proxy
+
+API -> API : append latency stats
+
+API --> Client : final chunk\n{done:true, stats}
+
+@enduml

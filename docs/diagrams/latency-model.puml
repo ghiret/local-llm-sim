@@ -1,0 +1,90 @@
+@startuml latency-model
+skinparam backgroundColor #FEFEFE
+
+title Latency Simulation Model
+
+rectangle "**Prefill Phase**\n(Time to First Token)" as prefill {
+    card "Base Delay" as pd1 #LightBlue
+    card "Gaussian Jitter" as pd2 #LightGreen
+
+    note right of pd1
+        base = input_tokens / prefill_tps
+
+        Example (4000 tokens @ 400 t/s):
+        base = 4000 / 400 = 10 sec
+    end note
+
+    note right of pd2
+        jitter = gaussian(0, 0.12)
+        actual = base * (1 + jitter)
+
+        Example: 10s * 1.08 = 10.8s
+    end note
+}
+
+rectangle "**Decode Phase**\n(Per-Token Generation)" as decode {
+    card "Base Rate" as dd1 #LightBlue
+    card "Gaussian Jitter" as dd2 #LightGreen
+    card "Random Stutters" as dd3 #LightCoral
+    card "Thermal Decay" as dd4 #LightYellow
+
+    note right of dd1
+        base = 1 / decode_tps
+
+        Example (20 t/s):
+        base = 1/20 = 50ms
+    end note
+
+    note right of dd2
+        jitter = gaussian(0, 0.20)
+        ~20% variance
+    end note
+
+    note right of dd3
+        5% probability
+        multiplier = uniform(2, 4)
+
+        Simulates memory/cache misses
+    end note
+
+    note right of dd4
+        After 200 tokens:
+        factor = 1 + (token_idx - 200) * 0.0003
+
+        @1000 tokens: 1.24x slowdown
+    end note
+}
+
+rectangle "**Combined Formula**" as formula #Lavender {
+    note as n1
+        token_delay = base_delay
+                    * (1 + jitter)
+                    * stutter_multiplier
+                    * thermal_factor
+
+        Where:
+          jitter ~ N(0, 0.20)
+          stutter = 1 (95%) or U(2,4) (5%)
+          thermal = max(1, 1 + (idx-200)*0.0003)
+    end note
+}
+
+prefill -[hidden]-> decode
+decode -[hidden]-> formula
+
+rectangle "**Example Timeline**\n(DeepSeek V3 on M3 Ultra)" as timeline #LightGray {
+    note as t1
+        Input: 4,000 tokens
+        Output: 200 tokens
+
+        Prefill:  4000/400 = 10s (+/- 1.2s)
+        Decode:   200/20 = 10s (+/- 2s)
+        ----------------------
+        Total:    ~20 seconds
+
+        vs Cloud API: ~2 seconds
+        Slowdown: ~10x
+    end note
+}
+
+@enduml

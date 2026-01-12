@@ -1,0 +1,276 @@
+# local-llm-sim Model Configuration
+# Each model has two versions:
+#   - :m3  = Mac Studio M3 Ultra simulation (with latency)
+#   - :api = Direct API access (no latency, for benchmarking)
+
+hardware:
+  name: "Mac Studio M3 Ultra 512GB"
+  description: "Apple Silicon with 512GB unified memory, ~800 GB/s bandwidth"
+
+models:
+  # =============================================================================
+  # DeepSeek V3 - 671B MoE, 37B active parameters
+  # =============================================================================
+
+  deepseek-v3:m3:
+    backend: "deepseek/deepseek-chat-v3-0324"
+    display_name: "DeepSeek V3 [M3 Ultra]"
+    description: "671B MoE - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 400
+      decode_tps: 20
+    parameters:
+      size: "671B"
+      quantization: "Q4_K_M"
+      context_length: 128000
+    defaults:
+      temperature: 0.7
+      top_p: 0.9
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 404000000000
+
+  deepseek-v3:api:
+    backend: "deepseek/deepseek-chat-v3-0324"
+    display_name: "DeepSeek V3 [API]"
+    description: "671B MoE - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "671B"
+      context_length: 128000
+    defaults:
+      temperature: 0.7
+      top_p: 0.9
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # DeepSeek R1 - 671B MoE, reasoning optimized
+  # =============================================================================
+
+  deepseek-r1:m3:
+    backend: "deepseek/deepseek-r1"
+    display_name: "DeepSeek R1 [M3 Ultra]"
+    description: "671B Reasoning - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 350
+      decode_tps: 18
+    parameters:
+      size: "671B"
+      quantization: "Q4_K_M"
+      context_length: 128000
+    defaults:
+      temperature: 0.6
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 404000000000
+
+  deepseek-r1:api:
+    backend: "deepseek/deepseek-r1"
+    display_name: "DeepSeek R1 [API]"
+    description: "671B Reasoning - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "671B"
+      context_length: 128000
+    defaults:
+      temperature: 0.6
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # Llama 4 Scout - 109B MoE, 17B active
+  # =============================================================================
+
+  llama4-scout:m3:
+    backend: "meta-llama/llama-4-scout:free"
+    display_name: "Llama 4 Scout [M3 Ultra]"
+    description: "109B MoE - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 800
+      decode_tps: 40
+    parameters:
+      size: "109B"
+      quantization: "Q4_K_M"
+      context_length: 131072
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: true
+      embeddings: false
+    size_bytes: 60000000000
+
+  llama4-scout:api:
+    backend: "meta-llama/llama-4-scout:free"
+    display_name: "Llama 4 Scout [API]"
+    description: "109B MoE - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "109B"
+      context_length: 131072
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: true
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # Llama 4 Maverick - 400B MoE
+  # =============================================================================
+
+  llama4-maverick:m3:
+    backend: "meta-llama/llama-4-maverick"
+    display_name: "Llama 4 Maverick [M3 Ultra]"
+    description: "400B MoE - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 500
+      decode_tps: 25
+    parameters:
+      size: "400B"
+      quantization: "Q4_K_M"
+      context_length: 131072
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: true
+      embeddings: false
+    size_bytes: 200000000000
+
+  llama4-maverick:api:
+    backend: "meta-llama/llama-4-maverick"
+    display_name: "Llama 4 Maverick [API]"
+    description: "400B MoE - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "400B"
+      context_length: 131072
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: true
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # Qwen 2.5 72B - Dense model
+  # =============================================================================
+
+  qwen2.5-72b:m3:
+    backend: "qwen/qwen-2.5-72b-instruct"
+    display_name: "Qwen 2.5 72B [M3 Ultra]"
+    description: "72B Dense - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 600
+      decode_tps: 45
+    parameters:
+      size: "72B"
+      quantization: "Q4_K_M"
+      context_length: 32768
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 47000000000
+
+  qwen2.5-72b:api:
+    backend: "qwen/qwen-2.5-72b-instruct"
+    display_name: "Qwen 2.5 72B [API]"
+    description: "72B Dense - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "72B"
+      context_length: 32768
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # Qwen 2.5 32B - Fast dense model
+  # =============================================================================
+
+  qwen2.5-32b:m3:
+    backend: "qwen/qwen-2.5-32b-instruct"
+    display_name: "Qwen 2.5 32B [M3 Ultra]"
+    description: "32B Dense - Simulated on Mac Studio M3 Ultra"
+    latency:
+      prefill_tps: 900
+      decode_tps: 65
+    parameters:
+      size: "32B"
+      quantization: "Q4_K_M"
+      context_length: 32768
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 20000000000
+
+  qwen2.5-32b:api:
+    backend: "qwen/qwen-2.5-32b-instruct"
+    display_name: "Qwen 2.5 32B [API]"
+    description: "32B Dense - Direct API (no latency simulation)"
+    latency:
+      prefill_tps: 999999
+      decode_tps: 999999
+    parameters:
+      size: "32B"
+      context_length: 32768
+    defaults:
+      temperature: 0.7
+    capabilities:
+      tools: true
+      vision: false
+      embeddings: false
+    size_bytes: 0
+
+  # =============================================================================
+  # Embedding Model (for RAG)
+  # =============================================================================
+
+  nomic-embed:latest:
+    backend: "nomic-ai/nomic-embed-text-v1.5"
+    display_name: "Nomic Embed v1.5"
+    description: "High-quality text embeddings for RAG"
+    latency:
+      prefill_tps: 10000
+      decode_tps: 0
+    parameters:
+      dimensions: 768
+    capabilities:
+      tools: false
+      vision: false
+      embeddings: true
+    size_bytes: 548000000

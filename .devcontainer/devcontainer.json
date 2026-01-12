@@ -1,0 +1,46 @@
+{
+  "name": "local-llm-sim Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/local-llm-sim/.venv/bin/python",
+        "python.formatting.provider": "none",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        }
+      }
+    }
+  },
+  "forwardPorts": [3000, 11434],
+  "portsAttributes": {
+    "3000": {
+      "label": "Open WebUI",
+      "onAutoForward": "notify"
+    },
+    "11434": {
+      "label": "Ollama API (local-llm-sim)",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "python3 -m venv .venv && . .venv/bin/activate && pip install -e '.[dev]' && chmod +x scripts/dev.sh",
+  "postStartCommand": "echo '\n=== local-llm-sim Dev Environment ===\n\n1. Set your API key:\n   export OPENROUTER_API_KEY=\"sk-or-...\"\n   (or create .env file with OPENROUTER_API_KEY=sk-or-...)\n\n2. Start services:\n   source .venv/bin/activate\n   ./scripts/dev.sh start-all\n\n3. Access:\n   - Open WebUI: http://localhost:3000\n   - API: http://localhost:11434\n'",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  }
+}
