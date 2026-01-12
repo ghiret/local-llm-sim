@@ -112,6 +112,7 @@ async def stream_chat_response(
     output_tokens = 0
     prefill_delay_ms = 0.0
     decode_delay_ms = 0.0
+    simulated_sleep_ms = 0.0
 
     if simulate_latency:
         # Create latency simulator
@@ -127,6 +128,7 @@ async def stream_chat_response(
             output_tokens = stats.output_tokens
             prefill_delay_ms = stats.prefill_delay_ms
             decode_delay_ms = stats.decode_delay_ms
+            simulated_sleep_ms = stats.simulated_sleep_ms
             yield json.dumps(ollama_chunk).encode() + b"\n"
     else:
         async for chunk in backend_stream:
@@ -136,7 +138,9 @@ async def stream_chat_response(
                 output_tokens += 1
             yield json.dumps(ollama_chunk).encode() + b"\n"
 
-    backend_ms = (time.monotonic() - backend_start) * 1000
+    total_elapsed_ms = (time.monotonic() - backend_start) * 1000
+    # Actual API time = total elapsed - simulated sleep delays
+    actual_api_ms = total_elapsed_ms - simulated_sleep_ms
 
     # Append latency stats summary to the response (visible in UI)
     if simulate_latency and (prefill_delay_ms > 0 or decode_delay_ms > 0):
@@ -148,7 +152,7 @@ async def stream_chat_response(
             f"*M3 Ultra sim: {total_sim_ms/1000:.1f}s total "
             f"({prefill_delay_ms/1000:.1f}s prefill @ {prefill_tps} t/s, "
             f"{decode_delay_ms/1000:.1f}s decode @ {decode_tps} t/s) | "
-            f"API: {backend_ms/1000:.1f}s*"
+            f"API: {actual_api_ms/1000:.1f}s*"
         )
         stats_chunk = {
             "model": model_name,
@@ -165,7 +169,7 @@ async def stream_chat_response(
         output_tokens=output_tokens,
         simulated_prefill_ms=prefill_delay_ms,
         simulated_decode_ms=decode_delay_ms,
-        backend_ms=backend_ms,
+        backend_ms=actual_api_ms,
     )
 
 
@@ -193,6 +197,7 @@ async def chat(request_obj: OllamaChatRequest, request: Request) -> Any:
 
         backend_start = time.monotonic()
         prefill_delay_ms = 0.0
+        simulated_sleep_ms = 0.0
 
         # Simulate prefill delay even for non-streaming
         if simulate_latency:
@@ -201,8 +206,9 @@ async def chat(request_obj: OllamaChatRequest, request: Request) -> Any:
                 decode_tps=model_config.latency.decode_tps,
             )
             simulator = LatencySimulator(latency_config)
-            prefill_delay = await simulator.simulate_prefill(input_tokens)
+            prefill_delay, prefill_sleep = await simulator.simulate_prefill(input_tokens)
             prefill_delay_ms = prefill_delay * 1000
+            simulated_sleep_ms = prefill_sleep * 1000
 
         options = request_obj.options or {}
         response = await proxy.chat_completion(
@@ -213,7 +219,8 @@ async def chat(request_obj: OllamaChatRequest, request: Request) -> Any:
             top_p=options.get("top_p"),
         )
 
-        backend_ms = (time.monotonic() - backend_start) * 1000
+        total_elapsed_ms = (time.monotonic() - backend_start) * 1000
+        actual_api_ms = total_elapsed_ms - simulated_sleep_ms
 
         # Get output token count from response
         usage = response.get("usage", {})
@@ -226,7 +233,7 @@ async def chat(request_obj: OllamaChatRequest, request: Request) -> Any:
             output_tokens=output_tokens,
             simulated_prefill_ms=prefill_delay_ms,
             simulated_decode_ms=0,
-            backend_ms=backend_ms,
+            backend_ms=actual_api_ms,
         )
 
         # Convert to Ollama format
@@ -238,7 +245,7 @@ async def chat(request_obj: OllamaChatRequest, request: Request) -> Any:
             stats_summary = (
                 f"\n\n---\n"
                 f"*M3 Ultra sim: {prefill_delay_ms/1000:.1f}s prefill @ {prefill_tps} t/s | "
-                f"API: {backend_ms/1000:.1f}s*"
+                f"API: {actual_api_ms/1000:.1f}s*"
             )
             if ollama_response.get("message", {}).get("content"):
                 ollama_response["message"]["content"] += stats_summary

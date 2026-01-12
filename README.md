@@ -20,22 +20,13 @@ This tool lets you find out by simulating realistic local inference latency whil
 
 ## How It Works
 
-```
-┌─────────────────┐     ┌──────────────────────┐     ┌─────────────┐
-│  Open WebUI     │     │                      │     │             │
-│  aider          │────▶│   local-llm-sim      │────▶│  OpenRouter │
-│  opencode       │◀────│   (Ollama API)       │◀────│             │
-│  agents         │     │                      │     │             │
-└─────────────────┘     └──────────────────────┘     └─────────────┘
-                               │
-                        Adds realistic delays:
-                        • Prefill: ~400 tok/s
-                        • Decode: ~20 tok/s
-                        • Stochastic jitter
-                        • Thermal throttling
-```
+![local-llm-sim flow](docs/diagrams/readme-flow.png)
 
-The simulator exposes an **Ollama-compatible API**, so any tool that works with Ollama works with this—unchanged.
+The simulator exposes an **Ollama-compatible API**, so any tool that works with Ollama works with this—unchanged. It adds realistic delays to simulate local hardware:
+- **Prefill**: ~400 tok/s (prompt processing)
+- **Decode**: ~20 tok/s (token generation)
+- **Stochastic jitter**: Random variance per token
+- **Thermal throttling**: Gradual slowdown on long outputs
 
 ## Quick Start
 

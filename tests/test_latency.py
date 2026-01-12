@@ -157,10 +157,11 @@ async def test_simulate_prefill() -> None:
     config = LatencyConfig(prefill_tps=10000, decode_tps=1000)  # Fast for testing
     simulator = LatencySimulator(config)
 
-    delay = await simulator.simulate_prefill(100)
+    delay, sleep_time = await simulator.simulate_prefill(100)
 
     # 100 tokens at 10000 tps = 0.01 seconds
     assert 0 < delay < 0.05  # Allow for jitter
+    assert delay == sleep_time  # For prefill, all delay is simulated sleep
 
 
 @pytest.mark.asyncio

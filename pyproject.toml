@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "you@example.com"}
+    {name = "ghiret"}
 ]
 keywords = ["llm", "ollama", "simulation", "latency", "mac-studio", "apple-silicon"]
 classifiers = [

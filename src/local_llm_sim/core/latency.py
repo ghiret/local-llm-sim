@@ -39,6 +39,7 @@ class LatencyStats:
     effective_prefill_tps: float = 0
     effective_decode_tps: float = 0
     stutters: int = 0
+    simulated_sleep_ms: float = 0  # Total artificial delay added
 
 
 class LatencySimulator:
@@ -106,16 +107,16 @@ class LatencySimulator:
         delay = max(0, base_delay * jitter * stutter * thermal)
         return delay, is_stutter
 
-    async def simulate_prefill(self, input_tokens: int) -> float:
+    async def simulate_prefill(self, input_tokens: int) -> tuple[float, float]:
         """
         Simulate prefill phase (prompt processing).
 
-        Returns the delay applied in seconds.
+        Returns (total_delay_seconds, sleep_seconds).
         """
         delay = self._calculate_prefill_delay(input_tokens)
         if delay > 0:
             await asyncio.sleep(delay)
-        return delay
+        return delay, delay  # For prefill, all delay is simulated sleep
 
     async def throttle_stream(
         self,
@@ -131,8 +132,9 @@ class LatencySimulator:
         stats = LatencyStats(input_tokens=input_tokens)
 
         # Prefill phase
-        prefill_delay = await self.simulate_prefill(input_tokens)
+        prefill_delay, prefill_sleep = await self.simulate_prefill(input_tokens)
         stats.prefill_delay_ms = prefill_delay * 1000
+        stats.simulated_sleep_ms = prefill_sleep * 1000
 
         # Decode phase
         decode_start = time.monotonic()
@@ -146,6 +148,7 @@ class LatencySimulator:
 
             if token_delay > 0:
                 await asyncio.sleep(token_delay)
+                stats.simulated_sleep_ms += token_delay * 1000
 
             token_index += 1
             stats.output_tokens = token_index
